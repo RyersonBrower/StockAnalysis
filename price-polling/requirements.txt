@@ -1,0 +1,5 @@
+yfinance
+flask
+requests
+pandas
+mysql-connector-python

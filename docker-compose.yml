@@ -1,0 +1,55 @@
+
+services:
+  price-polling:
+    build: ./price-polling
+    depends_on:
+      - mysql
+    ports:
+      - "5001:5001"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - MYSQL_HOST=mysql
+      - MYSQL_USER=appuser
+      - MYSQL_PASSWORD=apppassword
+      - MYSQL_DATABASE=stocks
+  fundamental-data:
+    build: ./fundamental-data
+    depends_on:
+      - mysql
+    ports:
+      - "5002:5002"
+    environment:
+      - MYSQL_HOST=mysql
+      - MYSQL_USER=appuser
+      - MYSQL_PASSWORD=apppassword
+      - MYSQL_DATABASE=stocks
+
+  analysis-visualization:
+    build: ./analysis-visualization
+    ports:
+      - "5003:5003"
+    depends_on:
+      - mysql
+
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: "Rb03/18/05"
+      MYSQL_DATABASE: stocks
+      MYSQL_USER: appuser
+      MYSQL_PASSWORD: apppassword
+    volumes:
+      - ./mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    ports:
+      - "3307:3306"
+
+volumes:
+  mysql_data:
+
+
+

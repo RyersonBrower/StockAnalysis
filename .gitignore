@@ -1,0 +1,45 @@
+# -----------------
+# Python
+# -----------------
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.env
+venv/
+env/
+*.sqlite3
+
+# -----------------
+# MySQL / Database
+# -----------------
+mysql_data/
+*.sock
+*.log
+*.pid
+
+# -----------------
+# Docker
+# -----------------
+*.env
+docker-compose.override.yml
+*.log
+*.tmp
+*.swp
+*.bak
+
+# -----------------
+# VS Code / Editors
+# -----------------
+.vscode/
+*.code-workspace
+*.sublime-project
+*.sublime-workspace
+.DS_Store
+
+# -----------------
+# OS files
+# -----------------
+Thumbs.db
+ehthumbs.db
+Desktop.ini
