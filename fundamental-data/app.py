@@ -5,7 +5,7 @@ import pandas as pd
 import yfinance as yf
 import mysql.connector
 from mysql.connector import Error
-import datetime
+from datetime import datetime
 
 
 # --------------- Database Config -------------------
@@ -38,7 +38,42 @@ else:
 # --------------------- Helper Functions --------------------
 
 
-#def insert_fundamental_data():
+
+# gets and stores mysql connection function
+def get_connection():
+    return mysql.connector.connect(
+        host=host,
+        port=port, #if not working check this first
+        user=user,
+        password=password,
+        database=database,
+    )
+
+
+def insert_fundamentals(ticker, market_cap, pe_ratio, dividend_yield, last_updated):
+
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    sql = """
+        INSERT INTO fundamentals(ticker, market_cap, pe_ratio, dividend_yield, last_updated)
+        VALUES(%s, %s, %s, %s, %s)
+        ON DUPLICATE KEY UPDATE
+            ticker = VALUES(ticker),
+            market_cap = VALUES(market_cap),
+            pe_ratio = VALUES(pe_ratio),
+            dividend_yield = VALUES(dividend_yield),
+            last_updated = VALUES(last_updated)
+    """
+
+    values = (ticker, market_cap, pe_ratio, dividend_yield, last_updated)
+
+    cursor.execute(sql, values)
+    connection.commit()
+    cursor.close()
+    connection.close()
+
+    print(f"/n Last Updated at {last_updated}")
     
     
 
@@ -53,11 +88,12 @@ def fetch_and_store():
         market_cap = info.get("marketCap")
         pe_ratio = info.get("trailingPE")
         dividend_yield = info.get("dividendYield")
+        last_updated = datetime.now()
 
         print(f"\n--- {ticker} ---")
         print(f"Market Cap: {market_cap}, PE Ratio: {pe_ratio}, Divident Yield: {dividend_yield}")
 
-        #insert_fundamental_data(ticker, market_cap, pe_ratio, dividend_yield)
+        insert_fundamentals(ticker, market_cap, pe_ratio, dividend_yield, last_updated)
 
    
 
