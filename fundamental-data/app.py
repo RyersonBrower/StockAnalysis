@@ -6,7 +6,10 @@ import yfinance as yf
 import mysql.connector
 from mysql.connector import Error
 from datetime import datetime
+from flask import Flask, jsonify
+import threading
 
+app = Flask(__name__)
 
 # --------------- Database Config -------------------
 host=os.environ.get("MYSQL_HOST", "localhost")
@@ -98,24 +101,49 @@ def fetch_and_store():
    
 
 
-#-------------- MAIN LOOP -----------------
-sys.stdout.reconfigure(line_buffering=True)  # <-- ensures print() flushes instantly
+# --------------- Flask Communication ----------------
 
-first_cycle = True
+def get_fundamentals(ticker):
+    connection = get_connection()
+    cursor = connection.cursor(dictionary=True)
+    query = "SELECT * FROM fundamentals WHERE ticker = %s"
+    cursor.execute(query, (ticker,))
+    rows = cursor.fetchall()
+    cursor.close()
+    connection.close()
+    return rows
 
-first_cycle = True
 
-while True:
-    print("\n--- Retrieving Fundamental Data ---", flush=True)
-    fetch_and_store()
-    print("Fundamental Data Retrieved.\n", flush=True)
 
-    if first_cycle:
-        first_cycle = False
-        print("Initial fetch complete. Next fetch will be in 24 hours.", flush=True)
-    
-    time.sleep(86400)  # sleep 24 hours before next fetch
+# ---------------- Flask API Route ------------------
 
+@app.route("/api/fundamentals/<ticker>")
+def fundamentals_api(ticker):
+    data = get_fundamentals(ticker)
+    return jsonify(data)
+
+
+# ---------------- Background Loop --------------------
+def start_fetch_loop():
+    """Continuously fetch fundamentals every 24 hours in a background thread."""
+    sys.stdout.reconfigure(line_buffering=True)  # ensures print flushes instantly
+    first_cycle = True
+    while True:
+        print("\n--- Retrieving Fundamental Data ---", flush=True)
+        fetch_and_store()
+        print("Fundamental Data Retrieved.\n", flush=True)
+        if first_cycle:
+            first_cycle = False
+            print("Initial fetch complete. Next fetch in 24 hours.", flush=True)
+        time.sleep(86400)  # 24 hours
+
+#-------------- RUN BOTH Flask + Fetch Loop -----------------
+
+if __name__ == "__main__":
+    #start fetch loop in background thread
+    threading.Thread(target=start_fetch_loop, daemon=True).start
+    #Start Flask Server
+    app.run(host="0.0.0.0", port=5002)
 
 
 

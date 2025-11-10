@@ -5,7 +5,11 @@ import yfinance as yf
 import pandas as pd
 import mysql.connector
 from mysql.connector import Error
+from flask import Flask, jsonify
+import threading
 import datetime 
+
+app = Flask(__name__)
 
 
 # --------------- Database Config -------------------
@@ -102,19 +106,58 @@ def fetch_and_store():
         else:
             print(f"No data returned for {ticker}")
 
+
+
+
+
+# ---------------Flask Communication ------------------
+
+def get_prices(ticker):
+    connection = get_connection()
+    cursor = connection.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM price_data WHERE ticker = %s ORDER BY timestamp", (ticker,))
+    rows = cursor.fetchall()
+    cursor.close()
+    connection.close()
+    return rows
+
+
+# ---------------Flask API Route ----------------------
+
+@app.route("/api/prices/<ticker>")
+def prices_api(ticker):
+    """API endpoint to get all price data for a ticker"""
+    return jsonify(get_prices(ticker))
+
 #-------------- MAIN LOOP -----------------
-sys.stdout.reconfigure(line_buffering=True)  # <-- ensures print() flushes instantly
 
-first_cycle = True
+def start_price_loop():
+    #continuously fetch price data every x minutes in background
+    sys.stdout.reconfigure(line_buffering=True)
+    first_cycle = True
 
-while True:
-    print("\n--- Starting new polling cycle ---", flush=True)
-    fetch_and_store()
+    while True:
+        print("\n --- Retrieving Price Data ---", flush=True)
+        fetch_and_store()
+        print("Price Data Retrieved.\n", flush=True)
 
-    if first_cycle:
-        print("Initial polling complete. Starting regular 5-minute cycles.\n", flush=True)
-        first_cycle = False
-    else:
-        print("Sleeping for 5 minutes ... \n", flush=True)
-        time.sleep(60)
+        if first_cycle:
+            first_cycle = False
+            print("Initial fetch complete. Next fetch will be in 5 minutes", flush=True)
+        
+        time.sleep(300)
+
+
+
+
+
+
+if __name__ == "__main__":
+    # Start polling thread
+    t = threading.Thread(target=start_price_loop, daemon=True)
+    t.start()
+
+    print("🟢 Starting Flask server...", flush=True)
+    app.run(host="0.0.0.0", port=5001)
+
 
