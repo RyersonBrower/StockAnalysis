@@ -28,8 +28,15 @@ services:
     build: ./analysis-visualization
     ports:
       - "5003:5003"
+    environment:
+      - MYSQL_HOST=mysql
+      - MYSQL_USER=appuser
+      - MYSQL_PASSWORD=apppassword
+      - MYSQL_DATABASE=stocks
     depends_on:
       - mysql
+      - price-polling
+      - fundamental-data
 
   mysql:
     image: mysql:8.0
