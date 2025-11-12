@@ -5,7 +5,7 @@ import yfinance as yf
 import pandas as pd
 import mysql.connector
 from mysql.connector import Error
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 import threading
 import datetime 
 
@@ -52,15 +52,18 @@ def get_connection():
 
 #inserts price data into table
 def insert_price_data(ticker, data):
+    """
+    Inserts multiple rows from a DataFrame into MySQL.
+    Keeps UNIQUE KEY on (ticker, timestamp) to prevent duplicates.
+    Only prints the latest row for logging.
+    """
     connection = get_connection()
     cursor = connection.cursor()
 
-    
     sql = """
         INSERT INTO price_data (ticker, timestamp, open_price, high_price, low_price, close_price, volume)
         VALUES (%s, %s, %s, %s, %s, %s, %s)
         ON DUPLICATE KEY UPDATE
-            timestamp = VALUES(timestamp),
             open_price = VALUES(open_price),
             high_price = VALUES(high_price),
             low_price = VALUES(low_price),
@@ -68,23 +71,30 @@ def insert_price_data(ticker, data):
             volume = VALUES(volume)
     """
 
-    latest_row = data.tail(1).iloc[0]
-    timestamp = data.tail(1).index[0].to_pydatetime()
+    for idx, row in data.iterrows():
+        timestamp = idx.to_pydatetime()  # convert index to datetime
+        values = (
+            ticker,
+            timestamp,
+            float(row["Open"]),
+            float(row["High"]),
+            float(row["Low"]),
+            float(row["Close"]),
+            float(row["Volume"]),
+        )
+        cursor.execute(sql, values)
 
-    values = (
-        ticker, 
-        timestamp,
-        float(latest_row["Open"]),
-        float(latest_row["High"]),
-        float(latest_row["Low"]),
-        float(latest_row["Close"]),
-        float(latest_row["Volume"]),
-    )
-
-    cursor.execute(sql, values)
     connection.commit()
     cursor.close()
     connection.close()
+
+    # Print only the last row for logging
+    latest_row = data.tail(1)
+    print(f"\n--- {ticker} Latest Row ---")
+    print(latest_row)
+    print(f"{ticker} data inserted.\n")
+
+
 
     
 
@@ -93,18 +103,29 @@ def fetch_and_store():
 
     for ticker in tickers:
         stock = yf.Ticker(ticker)
-        data = stock.history(period = "1d", interval = "5m")
 
-        if not data.empty:
-            data = data[["Open", "High", "Low", "Close", "Volume"]]
-
-            latest_row = data.tail(1)
-            print(f"\n--- {ticker} ---")
-            print(latest_row)
-            insert_price_data(ticker, latest_row)
-            print(f"{ticker} Latest data inserted.")
+        # Historical daily data
+        historical = stock.history(period="60d", interval="1d")
+        if not historical.empty:
+            historical = historical[["Open", "High", "Low", "Close", "Volume"]]
+            insert_price_data(ticker, historical)
+            print(f"{ticker} historical daily data inserted.")
         else:
-            print(f"No data returned for {ticker}")
+            print(f"No historical data for {ticker}")
+
+        # Intraday 5-min data
+        intraday = stock.history(period="1d", interval="5m")
+        if not intraday.empty:
+            intraday = intraday[["Open", "High", "Low", "Close", "Volume"]]
+            insert_price_data(ticker, intraday)
+            print(f"{ticker} intraday 5-min data inserted.")
+        else: print(f"No intraday data for {ticker}")
+
+        # Log the last row only
+        latest_row = intraday.tail(1) if not intraday.empty else historical.tail(1)
+        print(f"\n--- {ticker} Latest Row ---")
+        print(latest_row)
+        print(f"{ticker} fetch complete.\n")
 
 
 
@@ -112,23 +133,26 @@ def fetch_and_store():
 
 # ---------------Flask Communication ------------------
 
-def get_prices(ticker):
+def get_prices(ticker, limit=80):
     connection = get_connection()
     cursor = connection.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM price_data WHERE ticker = %s ORDER BY timestamp", (ticker,))
+    cursor.execute(
+        "SELECT * FROM price_data WHERE ticker = %s ORDER BY timestamp",
+        (ticker, limit))
     rows = cursor.fetchall()
     cursor.close()
     connection.close()
-    return rows
+    return list(reversed(rows))
 
 
 # ---------------Flask API Route ----------------------
 
 @app.route("/api/prices/<ticker>")
 def prices_api(ticker):
-    """API endpoint to get all price data for a ticker"""
-    return jsonify(get_prices(ticker))
-
+    """API endpoint to 80 rows because that is optimal for this time prime"""
+    limit = request.args.get("limit", default=80, type=int) #default = last 80 rows
+    rows = get_prices(ticker, limit)
+    return jsonify(rows)
 #-------------- MAIN LOOP -----------------
 
 def start_price_loop():
