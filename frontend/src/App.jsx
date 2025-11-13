@@ -13,27 +13,39 @@ import "./App.css";
 function App() {
   const [data, setData] = useState(null);
   const [ticker, setTicker] = useState("AAPL");
+  const [debouncedTicker, setDebouncedTicker] =useState("AAPL");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  const fetchData = () => {
-    if (!ticker) return;
-    setLoading(true);
-    fetch(`${import.meta.env.VITE_API_URL}/api/data/${ticker}?limit=80`)
-      .then((res) => res.json())
-      .then(setData)
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  };
-
+  // Debounce user input (wait 1s after they stop typing)
   useEffect(() => {
-      fetchData();
-    }, [ticker, fetchData]);
+    const handler = setTimeout(() => {
+      setDebouncedTicker(ticker);
+    }, 1000);
 
-
-  useEffect(() => {
-    const interval = setInterval(fetchData, 300000);
-    return () => clearInterval(interval);
+    return () => clearTimeout(handler);
   }, [ticker]);
+
+  // Fetch data whenever the debounced ticker changes
+  useEffect(() => {
+    if (!debouncedTicker) return;
+
+    setLoading(true);
+    setError(null);
+
+    fetch(`${import.meta.env.VITE_API_URL}/api/data/${debouncedTicker}?limit=80`)
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to fetch data");
+        return res.json();
+      })
+      .then(setData)
+      .catch((err) => {
+        console.error(err);
+        setError("No data available or API error");
+        setData(null);
+      })
+      .finally(() => setLoading(false));
+  }, [debouncedTicker]);
 
  return (
     <div className="app-container">
@@ -47,8 +59,8 @@ function App() {
         />
       </div>
 
-      {loading && <p>Loading...</p>}
-      {!ticker && <p>Please enter a ticker.</p>}
+      {loading && <p className="loading">Loading...</p>}
+      {!ticker && <p className="error">{error}</p>}
 
       {data ? (
         <div className="data-section">
@@ -71,22 +83,27 @@ function App() {
           <div className="chart-section">
             <h2>Price Trend (Close Price)</h2>
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={data.price_data}>
+              <LineChart 
+                data={data.price_data.slice(-20)}
+                margin={{top: 20, right: 30, left: 0, bottom: 5}}
+              >
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="timestamp" hide={false} />
-                <YAxis />
+                <XAxis dataKey="timestamp" tick={false} />
+                <YAxis domain={["auto", "auto"]}/>
                 <Tooltip />
                 <Line
                   type="monotone"
                   dataKey="close_price"
                   stroke="#007bff"
                   dot={false}
+                  name="Close"
                 />
                 <Line
                   type="monotone"
                   dataKey="SM20"
-                  stroke="#ff7300"
+                  stroke="#ff7300ff"
                   dot={false}
+                  name="SMA20"
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -130,7 +147,8 @@ function App() {
           </div>
         </div>
       ) : (
-        !loading && ticker && <p>No data available.</p>
+        !loading && 
+        !error && <p className="no-data">Enter a ticker to view stock data.</p>
       )}
     </div>
   );

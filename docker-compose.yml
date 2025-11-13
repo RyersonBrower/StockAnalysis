@@ -55,6 +55,18 @@ services:
     ports:
       - "3307:3306"
 
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://analysis-visualization:5003
+    depends_on:
+      - analysis-visualization
+
+
+
+
 volumes:
   mysql_data:
 
