@@ -1,7 +1,7 @@
 .app-container { 
   font-family: sans-serif; 
   padding: 2rem; 
-  background-color: #fafafa; 
+  background-color: darkslategrey; 
   color: #222; 
   min-height: 100vh; 
   width: 95vw;
@@ -126,3 +126,42 @@ input:focus {
   border-color: #007bff; 
   outline: none; 
 }
+
+.fundamentals-card {
+  background: #fff;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin: 2rem 0;
+}
+
+.fundamentals-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem 2rem;
+  margin-top: 1rem;
+}
+
+.fundamentals-item {
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 0.4rem;
+  padding-top: 0.2rem;
+  transition: background 0.15s ease;
+}
+
+.fundamentals-item:hover {
+  background: #f9f9f9;
+}
+
+.fundamentals-key {
+  font-weight: 600;
+  color: #333;
+}
+
+.fundamentals-value {
+  color: #222;
+  text-align: right;
+}
+

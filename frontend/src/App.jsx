@@ -65,19 +65,19 @@ function App() {
       {data ? (
         <div className="data-section">
           {/* Fundamentals */}
-          <div className="fundamentals">
+          <div className="fundamentals-card">
             <h2>Fundamentals</h2>
-            <table>
-              <tbody>
-                {Object.entries(data.fundamentals).map(([key, value]) => (
-                  <tr key={key}>
-                    <td className="key">{key}</td>
-                    <td className="value">{value}</td>
-                  </tr>
+
+            <div className="fundamentals-grid">
+              {Object.entries(data.fundamentals).map(([key, value]) => (
+                <div className="fundamentals-item" key={key}>
+                  <span className="fundamentals-key">{key}</span>
+                  <span className="fundamentals-value">{value}</span>
+                </div>
                 ))}
-              </tbody>
-            </table>
+            </div>
           </div>
+
 
           {/* Price Chart */}
           <div className="chart-section">
