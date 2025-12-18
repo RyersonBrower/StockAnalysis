@@ -15,7 +15,7 @@ pipeline {
         stage ("test") {
             when {
                 expression {
-                    BRANCH_NAME == 'dev'  //only executing if current branch is the dev branch
+                    BRANCH_NAME == 'main'  //only executing if current branch is the main branch
                 }
             }
             steps {
