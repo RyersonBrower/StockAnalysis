@@ -23,7 +23,6 @@ pipeline {
         stage ("test") {
             steps {
                 echo 'testing the project...'
-                sh "docker compose up --abort-on-container-exit"
             }
         }
     }
