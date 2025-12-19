@@ -60,7 +60,8 @@ function App() {
       </div>
 
       {loading && <p className="loading">Loading...</p>}
-      {!ticker && <p className="error">{error}</p>}
+      {error && <p className="error">{error}</p>}
+
 
       {data ? (
         <div className="data-section">

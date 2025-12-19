@@ -141,7 +141,7 @@ def start_fetch_loop():
 
 if __name__ == "__main__":
     #start fetch loop in background thread
-    threading.Thread(target=start_fetch_loop, daemon=True).start
+    threading.Thread(target=start_fetch_loop, daemon=True).start()
     #Start Flask Server
     app.run(host="0.0.0.0", port=5002)
 
