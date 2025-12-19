@@ -7,7 +7,7 @@ pipeline {
         stage ("init") {
             steps {
                 script {
-                    gv = load "script.groovy"
+                    gv = load "scripts/pipeline.groovy"
                 }
             }
         }
@@ -20,15 +20,28 @@ pipeline {
             }
         }
 
+
         stage ("test") {
             steps {
-                echo 'testing the project...'
+                script {
+                    gv.testApp()
+                }
+            }
+        }
+
+        stage ("deploy") {
+            steps {
+                script {
+                    gv.deployApp()
+                }
             }
         }
     }
-    //post {
-       // always {
-        //    sh 'docker compose down'
-      //  }
-    //}
+    post {
+        always {
+            script {
+                gv.postApp()
+            }
+        }
+    }
 }
