@@ -1,10 +1,9 @@
 def buildApp() {
+    echo 'building the project...'
     if (isUnix()) {
-        echo 'building the project...'
-        sh "docker compose up --build"
-    } else {
-        echo 'building the project...'
-        bat "docker compose up --build"
+        sh "docker compose up -d --build"
+    } else {    
+        bat "docker compose up -d --build"
     }
 }
 
