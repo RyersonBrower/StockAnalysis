@@ -1,26 +1,33 @@
-
+def gv
 
 pipeline {
-
     agent any
 
     stages {
+        stage ("init") {
+            steps {
+                gv = load "script.groovy"
+            }
+        }
 
         stage ("build") {
             steps {
-                echo 'building the project...'
+                script {
+                    gv.buildApp()
+                }
             }
         }
 
         stage ("test") {
-            when {
-                expression {
-                    BRANCH_NAME == 'main'  //only executing if current branch is the main branch
-                }
-            }
             steps {
                 echo 'testing the project...'
+                sh "docker compose up --abort-on-container-exit"
             }
+        }
+    }
+    post {
+        always {
+            sh 'docker compose down'
         }
     }
 }
